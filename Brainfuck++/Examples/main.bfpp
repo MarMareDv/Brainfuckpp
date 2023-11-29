@@ -1,0 +1,6 @@
+#includes libs/system.js
+
+proc _main {
+    printRaw("Hello World!")
+    uncall(ProcLoop)
+}
