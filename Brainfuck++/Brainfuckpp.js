@@ -133,7 +133,7 @@ const Brainfuckpp = new class {
                         try {
                             this.res += this.func[this.tok.val].apply(this, tree.rawtree[this.tokID+1].val.rawtree);
                             if(this.err){
-                                this.err = `Function ${this.tok.val}: ${this.err}`
+                                this.err = `Function "${this.tok.val}" : ${this.err}`
                             }
                         }catch(err) {
                             console.log(err);

@@ -5,6 +5,11 @@ return {
         return '';
     },
 
+    expr: (expr)=>{
+        if(!expr.type == "string" || !['"',"'"].includes(expr.pack)){ this.err = "Invalid Expression"; return;}
+        return this.formula(expr.val);
+    },
+
     printVar: (name)=>{
         if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
         return this.inScope(`${".>".repeat(this.vars[name.val].size)}${"<".repeat(this.vars[name.val].size)}`,this.vars[name.val].pos);
