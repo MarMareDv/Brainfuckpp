@@ -4,9 +4,19 @@ Brainfuck Transpiled Programming Language meant to imitate somewhat Kotlin style
 Example Hello World Program
 ```
 #includes libs/system.js
+#includes libs/controlflow.js
 
-proc _main {
-    printRaw("Hello World!")
-    uncall(ProcLoop)
+var main: proc
+var test: char
+
+exec {
+    call(main)
+    setChar(test[0] "a")
+}
+
+#section preproc
+
+proc main {
+    print(test)
 }
 ```
