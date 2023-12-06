@@ -1,6 +1,16 @@
 #includes libs/system.js
+#includes libs/controlflow.js
 
-proc _main {
-    printRaw("Hello World!")
-    uncall(ProcLoop)
+var main: proc
+var test: byte
+
+exec {
+    call(main)
+    setByte(test[0] 5)
+}
+
+#section preproc
+
+proc main {
+
 }

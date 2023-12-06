@@ -13,6 +13,8 @@ const Brainfuckpp = new class {
         this.tapePos = 0;
         this.data = data ?? {};
         this.error = "";
+        this.rawOps = {};
+        this.scopes = [];
         if(this.data.src){
             return await this._compile(await (await fetch(this.data.src)).text());
         }else if(this.data.code){
@@ -24,6 +26,7 @@ const Brainfuckpp = new class {
 
     async _compile(code){
         this.code = "";
+        this.pcode = "";
         this.ast = _BrainfuckppLexer(code,{
             '"':["string",'"'],
             "'":["string","'"],
@@ -38,13 +41,14 @@ const Brainfuckpp = new class {
             '[':["string",']'],
             '<':["delim",'',true],
             '>':["delim",'',true],
-            ',':["delim",'',true],
+            ',':["break",''],
             ':':["delim",'',true],
             '=':["delim",'',true],
             '+':["delim",'',true],
             '-':["delim",'',true],
             '*':["delim",'',true],
             ';':["delim",'',true],
+            '|':["comment",'|'],
         });
         this.ast.CoerceNum();
         console.log(this.ast);
@@ -56,10 +60,44 @@ const Brainfuckpp = new class {
                 if(this.ast.rawtree[this.i].type == "sym"){
                     //Basic Preprocessed Operations
                     switch(this.ast.rawtree[this.i].val){
+                        case("#section"):
+                            if(this.ast.rawtree[this.i+1].type != "sym"){ this.err="Invalid Section Name"; break; }
+                            switch(this.ast.rawtree[this.i+1].val){
+                                case("preproc"):
+                                    this.pcode = this.code;
+                                    break;
+
+                                default:
+                                    this.err = "Invalid Section Type";
+                                    break;
+                            }
+                            this.code = "";
+                            this.i += 1;
+                            break;
+
+                        case("typedef"):
+                            //Creates a Type Def
+                            if(this.ast.rawtree[this.i+1].type != "sym"){ this.err="Invalid Type Name"; break; }
+                            if(this.ast.rawtree[this.i+2].type != "object" || this.ast.rawtree[this.i+2].pack != "()"){ this.err="Type Definition Enclosure Not Found"; break; }
+                            if(this.ast.rawtree[this.i+2].val.rawtree.length != 2 || this.ast.rawtree[this.i+2].val.rawtree[0].type != "number" || this.ast.rawtree[this.i+2].val.rawtree[1].type != "number"){ this.err="Invalid Object Arguments"; break; }
+                            this.types[this.ast.rawtree[this.i+1].val] = {form: "std", sOff: this.ast.rawtree[this.i+2].val.rawtree[0].val, sFac: this.ast.rawtree[this.i+2].val.rawtree[1].val};
+                            this.i += 2;
+                            break;
+                        
                         case("#includes"):
-                            //Imports Functions From A File
+                            //Imports Functions from a File
                             if(!this.ast.rawtree[this.i+1].type == "sym"){ this.err="Invalid File Path In Includes"; break; }
-                            Object.assign(this.func,eval(`()=>{${await (await fetch(this.ast.rawtree[this.i+1].val)).text()}}`)())
+                            Object.assign(this.func,eval(`()=>{${await (await fetch(this.ast.rawtree[this.i+1].val)).text()}}`)());
+                            if(this.func._startup){
+                                this.func._startup(this);
+                                this.func._startup = undefined;
+                            }
+                            this.func._rawOps = this.func._rawOps ?? {};
+                            for(this.tempA of Object.keys(this.func._rawOps)){
+                                this.tempB = this.func._rawOps[this.tempA];
+                                this.rawOps[this.tempA] = this.tempB;
+                            }
+                            this.func._rawOps = undefined;
                             this.i += 1;
                             break;
 
@@ -83,12 +121,19 @@ const Brainfuckpp = new class {
                             this.i += 2;
                             break;
 
+                        case("exec"):
+                            //Raw Code Execution
+                            if(!(this.ast.rawtree[this.i+1].type == "object") || !(this.ast.rawtree[this.i+1].pack == "{}")){ this.err="Invalid Execution Block"; break; }
+                            this.code += this._parseBlock(this.ast.rawtree[this.i+1].val);
+                            this.i += 1;
+                            break;
+
                         default:
-                            this.err = `Unknown PreProcesser Operation '${this.j.val}'`;
+                            this.err = `Unknown Parser Operation '${this.j.val}'`;
                             break;
                     }
                 }else {
-                    this.err = `PreProcesser Encountered Invalid Operation Type '${this.ast.rawtree[this.i].type}'`;
+                    this.err = `Parser Encountered Invalid Operation Type '${this.ast.rawtree[this.i].type}'`;
                 }
             }catch (err) {
                 console.log(err);
@@ -98,7 +143,7 @@ const Brainfuckpp = new class {
         }
 
         console.log(this.vars,this.func);
-        return (this.err?this.err:`Program Done!\n\n+[>${this.code}<]`);
+        return (this.err?this.err:`Program Done!\n\n+>${this.pcode}<[>${this.code}<]`);
     }
 
     whileScope(code,scope){
@@ -128,12 +173,22 @@ const Brainfuckpp = new class {
         for(this.tokID = 0; this.tokID < tree.rawtree.length; this.tokID++){
             this.tok = tree.rawtree[this.tokID];
             if(this.tok.type == "sym"){
-                if(tree.rawtree[this.tokID+1].type == "object" && tree.rawtree[this.tokID+1].pack == "()"){
+                if(tree.rawtree[this.tokID+1].type == "delim" && tree.rawtree[this.tokID+1].val == ";"){
+                    try {
+                        this.res += this.rawOps[this.tok.val](this);
+                        this.tokID++
+                        if(this.err){
+                            this.err = `Operation "${this.tok.val}" : ${this.err}`;
+                        }
+                    }catch (err){
+                        this.err = `Operation "${this.tok.val}" Not Found`;
+                    }
+                }else if(tree.rawtree[this.tokID+1].type == "object" && tree.rawtree[this.tokID+1].pack == "()"){
                     if(this.func[this.tok.val]){
                         try {
                             this.res += this.func[this.tok.val].apply(this, tree.rawtree[this.tokID+1].val.rawtree);
                             if(this.err){
-                                this.err = `Function "${this.tok.val}" : ${this.err}`
+                                this.err = `Function "${this.tok.val}" : ${this.err}`;
                             }
                         }catch(err) {
                             console.log(err);
@@ -160,6 +215,13 @@ const Brainfuckpp = new class {
         if(isNaN(size) || size<1){ this.err=`Invalid Variable Size`; return; }
 
         if(this.types[type].form=="std"){
+            if(this.vars[name]){
+                if(this.vars[name].type=="proc" && type=="proc"){
+                }else {
+                    this.err = `Cannot Overlap Variable '${name}'`;
+                }
+                return;
+            }
             this.vars[name] = {pos: this.memPos,size: (this.types[type].sOff+(this.types[type].sFac*size)),type: type}
             this.memPos += (this.types[type].sOff+(this.types[type].sFac*size));
         }
@@ -211,6 +273,12 @@ function _BrainfuckppLexer (txt,res){
 					this.pack = res[this.t][1];
 				}else {
 					this.c = `${this.c}${this.t}`;
+				}
+				break
+            case("comment"):
+				if(this.t==this.pack){
+					this.c = "";
+					this.state = "sym";
 				}
 				break
 			case("string"):
