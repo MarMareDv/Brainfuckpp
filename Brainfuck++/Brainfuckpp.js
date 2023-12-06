@@ -283,9 +283,7 @@ function _BrainfuckppLexer (txt,res){
 				break
 			case("string"):
 				if(this.t==this.pack){
-					if(this.c.length>0){
-						this.tokens[this.tokens.length] = {type:this.state,val:this.c,pack:this.pack};
-					}
+					this.tokens[this.tokens.length] = {type:this.state,val:this.c,pack:this.pack};
 					this.c = "";
 					this.state = "sym";
 				}else {

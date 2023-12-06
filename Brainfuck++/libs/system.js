@@ -29,32 +29,52 @@ return {
         }
     },
 
+    moveByte: (name, pos, bname, bpos)=>{
+        if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
+        if(!pos.type == "string" || !pos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Byte Index"; return;}
+        if(!bname.type == "sym" || !this.vars[bname.val]){ this.err = "Variable Invalid"; return;}
+        if(!bpos.type == "string" || !bpos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Byte Index"; return;}
+        return `${this.inScope(`[-]`,this.vars[bname.val].pos+Number(bpos.val))}${this.procScope(this.inScope(`+`,this.vars[bname.val].pos+Number(bpos.val)),this.vars[name.val].pos+Number(pos.val))}`;
+    },
+
     addByte: (name, pos, val)=>{
         if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
-        if(!pos.type == "string" || !pos.pack == "]" || isNaN(pos.val)){ this.err = "Invalid Byte Index"; return;}
+        if(!pos.type == "string" || !pos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Byte Index"; return;}
         if(!val.type == "number" || val.val < 0 || val.val > 255){ this.err = "Invalid Byte Value 0-255"; return;}
-        return this.inScope(`${"+".repeat(val.val)}`,this.vars[name.val].pos);
+        return this.inScope(`${"+".repeat(val.val)}`,this.vars[name.val].pos+Number(pos.val));
     },
 
     subByte: (name, pos, val)=>{
         if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
-        if(!pos.type == "string" || !pos.pack == "]" || isNaN(pos.val)){ this.err = "Invalid Byte Index"; return;}
+        if(!pos.type == "string" || !pos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Byte Index"; return;}
         if(!val.type == "number" || val.val < 0 || val.val > 255){ this.err = "Invalid Byte Value 0-255"; return;}
-        return this.inScope(`${"-".repeat(val.val)}`,this.vars[name.val].pos);
+        return this.inScope(`${"-".repeat(val.val)}`,this.vars[name.val].pos+Number(pos.val));
     },
 
     setByte: (name, pos, val)=>{
         if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
-        if(!pos.type == "string" || !pos.pack == "]" || isNaN(pos.val)){ this.err = "Invalid Byte Index"; return;}
+        if(!pos.type == "string" || !pos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Byte Index"; return;}
         if(!val.type == "number" || val.val < 0 || val.val > 255){ this.err = "Invalid Byte Value 0-255"; return;}
-        return this.inScope(`[-]${"+".repeat(val.val)}`,this.vars[name.val].pos);
+        return this.inScope(`[-]${"+".repeat(val.val)}`,this.vars[name.val].pos+Number(pos.val));
     },
 
     setChar: (name, pos, val)=>{
         if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
         if(!pos.type == "string" || !pos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Char Index"; return;}
         if(!val.type == "string" || !['"',"'"].includes(val.pack) || val.val.length != 1 ){ this.err = "Invalid Char"; return;}
-        return this.inScope(`[-]${"+".repeat(val.val.charCodeAt(0))}`,this.vars[name.val].pos);
+        return this.inScope(`[-]${"+".repeat(val.val.charCodeAt(0))}`,this.vars[name.val].pos+Number(pos.val));
+    },
+
+    setString: (name, val)=>{
+        if(name.type != "sym" || !this.vars[name.val] || this.vars[name.val].type != "char"){ this.err = "Variable Invalid - Requires Char Type Variable"; return;}
+        if(val.type != "string" || !['"',"'"].includes(val.pack) || val.val.length > this.vars[name.val].size){ this.err = "Invalid String"; return;}
+        this.tempA = "";
+        for(this.tempI=0;this.tempI<this.vars[name.val].size;this.tempI++){
+            this.tempA += `[-]${"+".repeat(val.val.charCodeAt(this.tempI))}>`;
+        }
+        this.tempA += `<`.repeat(this.vars[name.val].size);
+
+        return this.inScope(this.tempA,this.vars[name.val].pos);
     },
 
     call: (name)=>{

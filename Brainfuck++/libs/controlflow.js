@@ -1,6 +1,6 @@
 return {
     _startup: (sys)=>{
-        sys.types.bool = {form: "std", sOff: 2, sFac:0}
+        sys.types.bool = {form: "std", sOff: 2, sFac:0};
     },
 
     setBool: (name,val)=>{
@@ -9,9 +9,15 @@ return {
         return this.inScope(`[-]${(val.val==1?"+":"")}`,this.vars[name.val].pos);
     },
 
-    if: (name)=>{
+    dif: (name)=>{
         if(!name.type == "sym" || !this.vars[name.val] || !(this.vars[name.val].type == "bool")){ this.err = "Variable Invalid - Requires Bool"; return;}
-        this.scopes.push(this.inScope("[",this.vars[name.val].pos));
-        return this.scopes.push(this.inScope("[-]]",this.vars[name.val].pos));
+        this.scopes.push(this.inScope(`-]`,this.vars[name.val].pos));
+        return this.inScope(`[`,this.vars[name.val].pos);
+    },
+
+    dwhile: (name)=>{
+        if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
+        this.scopes.push(this.inScope(`-]`,this.vars[name.val].pos));
+        return this.inScope(`[`,this.vars[name.val].pos);
     },
 }
