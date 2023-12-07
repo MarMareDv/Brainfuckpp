@@ -1,5 +1,5 @@
 # Brainfuckpp
-Brainfuck Transpiled Programming Language meant to imitate somewhat Kotlin style syntax with scripting specifically tailored for development in Brainfuck, alongside an interlanguage designed for easy brainfuck scripting in a common almost algebraic expression format.
+Brainfuck Transpiled Programming Language meant to imitate fairly modern syntax with scripting specifically tailored for development in Brainfuck, alongside an interlanguage designed for easy brainfuck scripting in a common almost algebraic expression format.
 
 Example Hello World Program
 ```
