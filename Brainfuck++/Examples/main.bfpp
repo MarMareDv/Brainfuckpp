@@ -2,25 +2,30 @@
 #includes libs/controlflow.js
 
 var main: proc
+var yellOut: proc
 var loop: byte
-var out: char
+var out: char[6]
 
 exec {
     |Initialize Values|
     call(main)
     setByte(loop[0] 10)
-    setString(out "a")
+    read(out)
 }
 
 #section preproc
 
 proc main {
-    |Prints out first 10 characters from "a"|
+    |Calls yellOut process 10 variable loop times!|
 
-    dwhile(loop)
-        print(out)
-        addByte(out[0] 1)
+    dwhile( loop[0] )
+        call(yellOut)
     end;
-    
+
     uncall(ProcLoop)
+}
+
+proc yellOut {
+    |Prints variable out|
+    print(out)
 }

@@ -1,5 +1,8 @@
 return {
 
+    //Control Flow Library (Built-in)
+    /*Implements all important functions*/
+
     '#': ()=>{
         //Comment
         return '';
@@ -16,8 +19,13 @@ return {
         return this.formula(this.tempExp);
     },
 
+    read: (name)=>{
+        if(name.type != "sym" || !this.vars[name.val] || this.vars[name.val].type != "char"){ this.err = "Invalid Input Variable - Requires Char Type Variable"; return;}
+        return this.inScope(`${",>".repeat(this.vars[name.val].size)}${"<".repeat(this.vars[name.val].size)}`,this.vars[name.val].pos);
+    },
+
     print: (name)=>{
-        if(!(name.type == "sym" && this.vars[name.val])&&!(name.type == "string" && ['"',"'"].includes(name.pack))){ this.err = "Invalid Input"; return;}
+        if(!(name.type == "sym" && this.vars[name.val])&&!(name.type == "string" && ['"',"'"].includes(name.pack))){ this.err = "Invalid Print Value"; return;}
         if(name.type == "string"){
             var tempStr = "";
             for(var tempChar of name.val.split('')){

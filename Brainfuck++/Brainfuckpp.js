@@ -83,6 +83,10 @@ const Brainfuckpp = new class {
                             this.types[this.ast.rawtree[this.i+1].val] = {form: "std", sOff: this.ast.rawtree[this.i+2].val.rawtree[0].val, sFac: this.ast.rawtree[this.i+2].val.rawtree[1].val};
                             this.i += 2;
                             break;
+
+                        case("struct"):
+                            //Creates a Struct (Unfinished)
+                            break;
                         
                         case("#includes"):
                             //Imports Functions from a File
