@@ -85,7 +85,11 @@ const Brainfuckpp = new class {
                             break;
 
                         case("struct"):
-                            //Creates a Struct (Unfinished)
+                            //Creates a Struct
+                            if(this.ast.rawtree[this.i+1].type != "sym"){ this.err="Invalid Struct Name"; break; }
+                            if(this.ast.rawtree[this.i+2].type != "object" || this.ast.rawtree[this.i+2].pack != "{}"){ this.err="Type Definition Enclosure Not Found"; break; }
+                            this.defineStruct(this.ast.rawtree[this.i+1].val,this.ast.rawtree[this.i+2].val.rawtree);
+                            this.i += 2;
                             break;
                         
                         case("#includes"):
@@ -146,13 +150,34 @@ const Brainfuckpp = new class {
             if(this.err) break;
         }
 
-        console.log(this.vars,this.func);
-        return (this.err?this.err:`Program Done!\n\n+>${this.pcode}<[>${this.code}<]`);
+        console.log(this.types,this.vars,this.func);
+        return (this.err?this.err:`+>${this.pcode}<[>${this.code}<]`);
     }
 
-    whileScope(code,scope){
+    defineStruct(name, data){
+        this.types[name] = {form:"struct",body:[]};
+        for(this.tempPos = 0;this.tempPos < data.length;this.tempPos++){
+            if(data[this.tempPos].type=="sym"){
+                if(data[this.tempPos+1].type != "delim" || data[this.tempPos+1].val != ":"){ this.err="Variable Type Definition Requires ':'"; break; }
+                if(data[this.tempPos+2].type != "sym" || !this.types[data[this.tempPos+2].val]){ this.err=`Variable Type '${data[this.tempPos+2].val}' Not Found`; break; }
+                if(data[this.tempPos+3]&&(data[this.tempPos+3].type == "string" || data[this.tempPos+3].type == "delim")&&data[this.tempPos+3].pack == "]"){
+                    if(data[this.tempPos+3].val != "*"&& isNaN(Number(data[this.tempPos+3].val))){ this.err="Invalid Type Size Definition"; break; }
+                    this.types[name].body.push({name: data[this.tempPos].val,type: data[this.tempPos+2].val, size: data[this.tempPos+3].val});
+                    this.tempPos += 3;
+                }else {
+                    this.types[name].body.push({name: data[this.tempPos].val,type: data[this.tempPos+2].val, size: 1});
+                    this.tempPos += 2;
+                }
+            }else {
+                this.err=`Invalid Struct Definition Found '${data[this.tempPos].val}'`
+            }
+            if(this.err) break;
+        }
+    }
+
+    whileScope(code,scope,out){
         this.tempPos = this.tapePos;
-        return `${this.moveTape(scope)}[${this.moveTape(this.tempPos)}${code}${this.moveTape(scope)}]${this.moveTape(this.tempPos)}`
+        return `${this.moveTape(scope)}[${this.moveTape(this.tempPos)}${code}${this.moveTape(scope)}${out??""}]${this.moveTape(this.tempPos)}`
     }
 
     procScope(code,scope,always){
@@ -228,6 +253,13 @@ const Brainfuckpp = new class {
             }
             this.vars[name] = {pos: this.memPos,size: (this.types[type].sOff+(this.types[type].sFac*size)),type: type}
             this.memPos += (this.types[type].sOff+(this.types[type].sFac*size));
+        }else if(this.types[type].form=="struct"){
+            for(this.tempB of this.types[type].body){
+                if(this.types[this.tempB.type].form == "struct"){ this.err="Cannot Define Structs Within Structs"; break; }
+                this.alloc((this.tempB.name=="Prototype"?name:`${name}.${this.tempB.name}`),this.tempB.type,(this.tempB.size=="*"?size:Number(this.tempB.size)));
+            }
+        }else {
+            this.err = "Invalid Datatype Form In Allocation";
         }
     }
 

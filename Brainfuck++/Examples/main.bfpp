@@ -1,31 +1,32 @@
 #includes libs/system.js
 #includes libs/controlflow.js
 
-var main: proc
-var yellOut: proc
-var loop: byte
-var out: char[6]
+|Init Variables|
+var cond: bool
+var elsecond: bool
+var inp: char
 
 exec {
-    |Initialize Values|
-    call(main)
-    setByte(loop[0] 10)
-    read(out)
-}
+    |Reads in input|
+    read(inp)
 
-#section preproc
+    |Compares to a and puts in condition|
+    subChar(inp[0] "a")
+    byteToBool(inp[0] cond)
 
-proc main {
-    |Calls yellOut process 10 variable loop times!|
-
-    dwhile( loop[0] )
-        call(yellOut)
+    |Branching If Statement using another Bool|
+    setBool(elsecond 1)
+    if( cond )
+        print("not said a!")
+        setBool(elsecond 0)
+    end;
+    if( elsecond )
+        print("said a!")
     end;
 
+    |Halts Program from Process Loop|
     uncall(ProcLoop)
 }
 
-proc yellOut {
-    |Prints variable out|
-    print(out)
-}
+|Sections code here into PreProcess|
+#section preproc
