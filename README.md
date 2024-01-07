@@ -4,13 +4,11 @@ Brainfuck Transpiled Programming Language meant to imitate fairly modern syntax 
 Example Hello World Program
 ```
 #includes libs/system.js
-var out: char[12]
+var out: char[12] = "Hello World!";
 
 exec {
     |Prints out Hello World|
-    setString(out "Hello World!")
     print(out)
-    uncall(ProcLoop) |Closes The Program Process Loop|
 }
 
 |Sections the code into the preProcess|
