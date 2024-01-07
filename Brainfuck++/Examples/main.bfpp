@@ -1,32 +1,35 @@
-#includes libs/system.js
-#includes libs/controlflow.js
+#includes "libs/system.js"
+#includes "libs/controlflow.js"
+
+|Reserve Process's|
+var main: proc = 1;
+var loop: proc;
 
 |Init Variables|
-var cond: bool
-var elsecond: bool
-var inp: char
+var inp: char;
+var cond: bool;
 
-exec {
-    |Reads in input|
-    read(inp)
+#section preproc
 
-    |Compares to a and puts in condition|
-    subChar(inp[0] "a")
-    byteToBool(inp[0] cond)
+|Truth Machine Program|
+proc main {
+  print("Input? ")
+  read(inp)
 
-    |Branching If Statement using another Bool|
-    setBool(elsecond 1)
-    if( cond )
-        print("not said a!")
-        setBool(elsecond 0)
-    end;
-    if( elsecond )
-        print("said a!")
-    end;
-
-    |Halts Program from Process Loop|
-    uncall(ProcLoop)
+  subChar(inp[0] "1")
+  byteToBool(inp[0] cond)
+  notBool(cond)
+  if(cond)
+    call(loop)
+  end;
 }
 
-|Sections code here into PreProcess|
-#section preproc
+proc loop {
+  print("1")
+  call(loop)
+}
+
+exec {
+  print("0")
+  uncall(ProcLoop)
+}

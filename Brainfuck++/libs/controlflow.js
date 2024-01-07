@@ -6,6 +6,14 @@ return {
     _startup: (sys)=>{
         sys.types.bool = {form: "std", sOff: 2, sFac:0};
     },
+    
+    repeat: (name, pos, times)=>{
+        if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
+        if(!pos.type == "string" || !pos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Byte Index"; return;}
+        if(!times.type == "number" || (times.val > -1 && times.val < 256) ){ this.err = "Loop Times Invalid"; return;}
+        this.scopes.push(this.inScope(`-]`,this.vars[name.val].pos));
+        return this.inScope(`[`,this.vars[name.val].pos);
+    },
 
     byteToBool: (name, pos, bname)=>{
         if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
@@ -31,10 +39,17 @@ return {
         return this.inScope(`[`,this.vars[name.val].pos);
     },
 
-    while: (name, pos)=>{
+    for: (name, pos)=>{
         if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
         if(!pos.type == "string" || !pos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Byte Index"; return;}
         this.scopes.push(this.inScope(`-]`,this.vars[name.val].pos+Number(pos.val)));
+        return this.inScope(`[`,this.vars[name.val].pos+Number(pos.val));
+    },
+
+    while: (name, pos)=>{
+        if(!name.type == "sym" || !this.vars[name.val]){ this.err = "Variable Invalid"; return;}
+        if(!pos.type == "string" || !pos.pack == "]" || isNaN(Number(pos.val))){ this.err = "Invalid Byte Index"; return;}
+        this.scopes.push(this.inScope(`]`,this.vars[name.val].pos+Number(pos.val)));
         return this.inScope(`[`,this.vars[name.val].pos+Number(pos.val));
     },
 }

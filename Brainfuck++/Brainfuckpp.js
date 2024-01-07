@@ -4,11 +4,13 @@ const Brainfuckpp = new class {
         this.vars = {
             ProcLoop: {pos: -1, size: 1, type: 'proc'}
         };
+        
         this.func = {};
         this.types = {
             proc: {form: "std", sOff:1, sFac: 0},
             byte: {form: "std", sOff:0, sFac: 1},
-            char: {form: "std", sOff:0, sFac: 1}
+            char: {form: "std", sOff:0, sFac: 1},
+            ref: {form: "std", sOff:0, sFac: 0}
         };
         this.tapePos = 0;
         this.data = data ?? {};
@@ -25,8 +27,10 @@ const Brainfuckpp = new class {
     }
 
     async _compile(code){
+        this.prgstack = [];
         this.code = "";
         this.pcode = "";
+        this.predefcode = "";
         this.ast = _BrainfuckppLexer(code,{
             '"':["string",'"'],
             "'":["string","'"],
@@ -57,14 +61,48 @@ const Brainfuckpp = new class {
         for(this.i = 0; this.i < this.ast.rawtree.length; this.i++){
             try {
                 this.j = this.ast.rawtree[this.i];
-                if(this.ast.rawtree[this.i].type == "sym"){
+                if(this.ast.rawtree[this.i].type == "delim"&&this.ast.rawtree[this.i].val == ";"){
+                    //Pop Program Stack
+                    if(!this.prgstack.pop()){ this.err="Program Stack Pop Failure"; }
+                }else if(this.j.type == "delim"&&this.j.val == "="){
+                    //Variable Definition
+                    switch(this.ast.rawtree[this.i+1].type){
+                        case("sym"):
+                            this.err="FAT Operation Denied";
+                            break;
+                        case("string"):
+                            this.predefcode += this.func.setString.apply(this,[this.prgstack[this.prgstack.length-1],this.ast.rawtree[this.i+1]])
+                            this.i+=1;
+                            break;
+                        case("number"):
+                            this.predefcode += this.func.setByte.apply(this,[this.prgstack[this.prgstack.length-1],{type:"string",val: 0,pack:"]"},this.ast.rawtree[this.i+1]])
+                            this.i+=1;
+                            break;
+                        case("object"):
+                            if(this.ast.rawtree[this.i+1].pack=="()"){
+                                let tempI = 0;
+                                for(tempI in this.ast.rawtree[this.i+1].val.rawtree){
+                                    if(this.ast.rawtree[this.i+1].val.rawtree[tempI].type != "number"){ this.err="Cannot Use Non-Byte Value In Object Def"; break; }
+                                    this.predefcode += this.func.setByte.apply(this,[this.prgstack[this.prgstack.length-1],{type:"string",val: tempI,pack:"]"},this.ast.rawtree[this.i+1].val.rawtree[tempI]])
+                                }
+                            }else {
+                                this.err = `Object Definition Type Denied Enclosure '${this.ast.rawtree[this.i+1].pack}'`;
+                            }
+                            this.i+=1;
+                            break;
+                        default:
+                            this.err=`Cannot Set "${this.ast.rawtree[this.i+1].type}"`
+                            break;
+                    }
+                    if(this.err){this.err=`Variable Definition Error : ${this.err}`}
+                }else if(this.ast.rawtree[this.i].type == "sym"){
                     //Basic Preprocessed Operations
                     switch(this.ast.rawtree[this.i].val){
                         case("#section"):
                             if(this.ast.rawtree[this.i+1].type != "sym"){ this.err="Invalid Section Name"; break; }
                             switch(this.ast.rawtree[this.i+1].val){
                                 case("preproc"):
-                                    this.pcode = this.code;
+                                    this.pcode += this.code;
                                     break;
 
                                 default:
@@ -94,7 +132,7 @@ const Brainfuckpp = new class {
                         
                         case("#includes"):
                             //Imports Functions from a File
-                            if(!this.ast.rawtree[this.i+1].type == "sym"){ this.err="Invalid File Path In Includes"; break; }
+                            if(this.ast.rawtree[this.i+1].type != "sym" && !(this.ast.rawtree[this.i+1].type == "string" && ["'",'"'].includes(this.ast.rawtree[this.i+1].pack))){ this.err="Invalid File Path In Includes"; break; }
                             Object.assign(this.func,eval(`()=>{${await (await fetch(this.ast.rawtree[this.i+1].val)).text()}}`)());
                             if(this.func._startup){
                                 this.func._startup(this);
@@ -112,6 +150,7 @@ const Brainfuckpp = new class {
                         case("var"):
                             //Variable Declaration
                             if(!this.ast.rawtree[this.i+1].type == "sym" || !this.CheckToken(this.ast.rawtree[this.i+2],"delim",":")){ this.err="Invalid Variable Definition"; break; }
+                            this.prgstack.push(this.ast.rawtree[this.i+1]);
                             if(this.ast.rawtree[this.i+4].type == "string"&&this.ast.rawtree[this.i+4].pack == "]"){
                                 this.alloc(this.ast.rawtree[this.i+1].val,this.ast.rawtree[this.i+3].val,Number(this.ast.rawtree[this.i+4].val));
                                 this.i += 4;
@@ -151,7 +190,7 @@ const Brainfuckpp = new class {
         }
 
         console.log(this.types,this.vars,this.func);
-        return (this.err?this.err:`+>${this.pcode}<[>${this.code}<]`);
+        return (this.err?this.err:`+>${this.predefcode}${this.pcode}<[>${this.code}<]`);
     }
 
     defineStruct(name, data){
@@ -159,8 +198,12 @@ const Brainfuckpp = new class {
         for(this.tempPos = 0;this.tempPos < data.length;this.tempPos++){
             if(data[this.tempPos].type=="sym"){
                 if(data[this.tempPos+1].type != "delim" || data[this.tempPos+1].val != ":"){ this.err="Variable Type Definition Requires ':'"; break; }
-                if(data[this.tempPos+2].type != "sym" || !this.types[data[this.tempPos+2].val]){ this.err=`Variable Type '${data[this.tempPos+2].val}' Not Found`; break; }
-                if(data[this.tempPos+3]&&(data[this.tempPos+3].type == "string" || data[this.tempPos+3].type == "delim")&&data[this.tempPos+3].pack == "]"){
+                if(!["sym","object"].includes(data[this.tempPos+2].type) && !this.types[data[this.tempPos+2].val]){ this.err=`Variable Type '${data[this.tempPos+2].val}' Not Found`; break; }
+                if(data[this.tempPos+2].type == "object"){
+                    if(data[this.tempPos].val != "constructor"){ this.err=`Trying to Initiate Block in Struct outside of constructor`; break; };
+                    this.types[name].body.push({name: data[this.tempPos].val,type: "",val: data[this.tempPos+2].val})
+                    this.tempPos += 2;
+                }else if(data[this.tempPos+3]&&(data[this.tempPos+3].type == "string" || data[this.tempPos+3].type == "delim")&&data[this.tempPos+3].pack == "]"){
                     if(data[this.tempPos+3].val != "*"&& isNaN(Number(data[this.tempPos+3].val))){ this.err="Invalid Type Size Definition"; break; }
                     this.types[name].body.push({name: data[this.tempPos].val,type: data[this.tempPos+2].val, size: data[this.tempPos+3].val});
                     this.tempPos += 3;
@@ -238,7 +281,7 @@ const Brainfuckpp = new class {
         return this.res;
     }
 
-    alloc(name,type,size){
+    alloc(name,type,size,barg){
         //Allocates Variables In Memory
         if(!this.types[type]){ this.err=`Cannot Allocate Variable Due To Undefined Type '${type}'`; return; }
         if(isNaN(size) || size<1){ this.err=`Invalid Variable Size`; return; }
@@ -252,11 +295,24 @@ const Brainfuckpp = new class {
                 return;
             }
             this.vars[name] = {pos: this.memPos,size: (this.types[type].sOff+(this.types[type].sFac*size)),type: type}
+            if((barg??{}).child){
+                this.vars[(barg??{}).child] = {pos: this.memPos,size: (this.types[type].sOff+(this.types[type].sFac*size)),type: type}
+            }
             this.memPos += (this.types[type].sOff+(this.types[type].sFac*size));
         }else if(this.types[type].form=="struct"){
+            this.tempDel = [];
             for(this.tempB of this.types[type].body){
-                if(this.types[this.tempB.type].form == "struct"){ this.err="Cannot Define Structs Within Structs"; break; }
-                this.alloc((this.tempB.name=="Prototype"?name:`${name}.${this.tempB.name}`),this.tempB.type,(this.tempB.size=="*"?size:Number(this.tempB.size)));
+                if(this.tempB.name=="constructor"){
+                    this.tempC = this.tempB.val;
+                }else {
+                    if(this.types[this.tempB.type].form == "struct"){ this.err="Cannot Define Structs Within Structs"; break; }
+                    this.alloc((this.tempB.name=="Prototype"?name:`${name}.${this.tempB.name}`),this.tempB.type,(this.tempB.size=="*"?size:Number(this.tempB.size)),{child: "this."+this.tempB.name});
+                    this.tempDel.push("this."+this.tempB.name);
+                }
+            }
+            this.predefcode += this._parseBlock(this.tempC);
+            for(this.tempB of this.tempDel){
+                this.vars[this.tempB] = null;
             }
         }else {
             this.err = "Invalid Datatype Form In Allocation";
