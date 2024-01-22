@@ -1,0 +1,25 @@
+{
+  "name": "brainfuckpp",
+  "displayName": "Brainfuck++",
+  "description": "Syntax Highlighting for Brainfuck++",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [{
+      "id": "brainfuckpp",
+      "aliases": ["Brainfuck++", "brainfuckpp"],
+      "extensions": [".bfpp"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "brainfuckpp",
+      "scopeName": "source.bfpp",
+      "path": "./syntaxes/brainfuckpp.tmLanguage.json"
+    }]
+  }
+}

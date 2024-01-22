@@ -1,0 +1,33 @@
+|Truth Machine Example|
+
+#includes "libs/system.js"
+#includes "libs/controlflow.js"
+
+|Initialize Variables|
+var main: proc = 1;
+var loop: proc;
+
+|Heavy Initialize|
+#use "libs/EzComp.bfpp"
+#use "libs/inputs.bfpp"
+
+#section preproc
+
+proc main {
+  read(inp)
+
+  |inp[0] == "1"|
+  copyByte(inp[0] cond.a[0])
+  setChar(cond.b[0] "1")
+  condEquals()
+  if(cond)
+    call(loop)
+  end;
+  print(inp)
+  uncall(ProcLoop)
+}
+
+proc loop {
+  print("1")
+  call(loop)
+}

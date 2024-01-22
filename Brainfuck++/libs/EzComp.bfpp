@@ -1,0 +1,23 @@
+|Ez Comparation Library|
+
+|Condition Handler Object|
+struct comp_data {
+  Prototype: bool
+  constructor: {}
+  acc: byte
+  a: byte
+  b: byte
+}
+
+var cond: comp_data;
+
+macro cond.equals {
+  moveByte(cond.a[0] cond[0])
+  moveSubByte(cond.b[0] cond[0])
+  notBool(cond)
+} alias condEquals = cond.equals
+
+macro cond.notequals {
+  moveByte(cond.a[0] cond[0])
+  moveSubByte(cond.b[0] cond[0])
+} alias condNotEquals = cond.notequals

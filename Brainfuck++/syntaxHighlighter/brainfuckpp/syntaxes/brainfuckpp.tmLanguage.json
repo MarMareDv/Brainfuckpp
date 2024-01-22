@@ -1,0 +1,60 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "Brainfuck++",
+	"patterns": [
+		{
+			"include": "#keywords"
+		},
+		{
+			"include": "#strings"
+		},
+		{
+			"include": "#expression"
+		}
+	],
+	"repository": {
+		"expression": {
+      "patterns": [{ "include": "#letter" }]
+    },
+		"letter": {
+      "match": "=|:|;|#|\\.",
+      "name": "keyword.letter"
+    },
+		"keywords": {
+			"patterns": [{
+				"name": "keyword.control.brainfuckpp",
+				"match": "\\b(alias|use|includes|section|var|proc|struct|exec|this|typedef|enum|macro|mexec)\\b"
+			},{
+				"name": "keyword.operator",
+				"match": "\\b(char|byte|ref|bool|void)\\b|1|2|3|4|5|6|7|8|9|0"
+			},{
+				"name": "keyword.operator.new",
+				"match": "\\b(end|expr|read|print|copyByte|moveAddByte|moveSubByte|dmoveByte|moveByte|clearByte|addByte|subByte|setByte|subChar|addChar|setChar|setString|call|uncall|scope|_rawOps|_startup|repeat|byteToBool|setBool|notBool|if|for|while)\\b"
+			}]
+		},
+		"strings": {
+			"name": "string.quoted.double.brainfuckpp",
+			"begin": "\"",
+			"end": "\"",
+			"patterns": [
+				{
+					"name": "constant.character.escape.brainfuckpp",
+					"match": "\\\\."
+				}
+			]
+		},
+		"paren-expression": {
+      "begin": "\\{",
+      "end": "\\}",
+      "beginCaptures": {
+        "0": { "name": "punctuation.paren.open" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.paren.close" }
+      },
+      "name": "expression.group",
+      "patterns": [{ "include": "#expression" }]
+    }
+	},
+	"scopeName": "source.bfpp"
+}

@@ -1,0 +1,11 @@
+#includes "libs/system.js"
+
+|Initialize Variables|
+var main: proc = 1;
+
+#section preproc
+
+proc main {
+  print("Hello World!")
+  uncall(ProcLoop)
+}

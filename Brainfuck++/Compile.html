@@ -1,0 +1,165 @@
+<!DOCTYPE HTML>
+
+<html>
+    <head>
+        <script src="Brainfuckpp.js"></script>
+        <style>
+            @font-face {
+                font-family: "basic";
+                src: url("editor/CozetteVector.ttf");
+            }
+
+            html, body {
+                font-family: "basic";
+                font-weight: bold;
+                margin: 0px;
+                padding: 0px;
+                background-color: #bbbbff;
+                color: #333333;
+            }
+
+            button {
+                border: none;
+                padding: 2vh;
+                font-size: 3vh;
+                font-weight: normal;
+                background: none;
+                color: inherit;
+                /* font-family: Arial, Helvetica, sans-serif, sans-serif; */
+                font-family: "basic";
+                font-weight: bold;
+            }
+
+            button:hover {
+                background-color: #5555ff;
+                color: #ffffff;
+            }
+
+            p {
+                margin-left: 2vw;
+                margin-right: 2vw;
+                font-size: 2.5vh;
+            }
+
+            img {
+                border-radius: 2vh;
+                height: 6vh;
+            }
+
+            h1 {
+                font-size: 3vh;
+                text-align: center;
+            }
+
+            #result {
+                font-weight: normal;
+                color: #000000;
+                background-color: #5555ff55;
+            }
+
+            textarea {
+                margin: 1em;
+                border-radius: 5px;
+                padding: 1vh;
+                border: none;
+                width: calc(100% - 2em - 2vh);
+                height: 50vh;
+                resize: none;
+                font-size: 2.5vh;
+                background-image: linear-gradient(0deg, #ddddff, #ffffff);
+                color: #444444;
+                /* font-family: Arial, Helvetica, sans-serif, sans-serif; */
+                font-family: "basic";
+                font-weight: bold;
+                box-shadow: 0px 0px 1vh #88888855;
+            }
+        </style>
+    </head>
+
+    <body>
+        <h1>Brainfuck++ Transpiler v2</h1>
+        <textarea id="output" readonly>Brainfuckpp Compiling...</textarea>
+        <p id="result"></p>
+        <button onclick="CopyCode()">Copy</button>
+        <button onclick="LoadCode()">Load File</button>
+        <button onclick="ExpCode()">Download</button>
+        <script>
+            (async () => {
+                //Compilation Step
+                document.getElementById('output').value = await Brainfuckpp.compile({
+                    src: 'Examples/main.bfpp',
+                    //You dont need a file you can also simply use this!
+                    //code: 'test'
+                });
+            })();
+
+            function LoadCode(){
+                loadFile((txt)=>{
+                    (async () => {
+                        //Compilation Step
+                        document.getElementById('output').value = await Brainfuckpp.compile({
+                            code: txt
+                        });
+                    })();
+                });
+            }
+
+            function ExpCode(){
+                download("compiled.bf",document.getElementById("output"))
+            }
+
+            function download(filename, text) {
+                this.element = document.createElement('a');
+                this.element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(text));
+                this.element.setAttribute('download', filename);
+
+                this.element.style.display = 'none';
+                document.body.appendChild(this.element);
+
+                this.element.click();
+
+                document.body.removeChild(this.element);
+            }
+
+            function loadFile(func) {
+                this.element = document.createElement('input');
+                this.element.setAttribute('type', 'file');
+
+                this.element.style.display = 'none';
+                document.body.appendChild(this.element);
+                    
+                this.element.click();
+                this.element.addEventListener('change', () => {
+                    this.fl = this.element.files
+                    if (this.fl.length == 0) return;
+                    this.fl = this.fl[0]
+                    
+                    this.read = new FileReader();
+                    
+                    this.read.onload = (e) => {
+                        func(e.target.result);
+                    }
+                        
+                    this.read.readAsText(this.fl);
+                });
+                    
+                document.body.removeChild(this.element);
+            }
+
+            function CopyCode(){
+                // Get the text field
+                let copyText = document.getElementById("output");
+
+                // Select the text field
+                copyText.select();
+                copyText.setSelectionRange(0, 99999); // For mobile devices
+
+                // Copy the text inside the text field
+                navigator.clipboard.writeText(copyText.value);
+
+                // Alert the copied text
+                document.getElementById("result").innerText = "Code Copied!";
+            }
+        </script>
+    </body>
+</html>

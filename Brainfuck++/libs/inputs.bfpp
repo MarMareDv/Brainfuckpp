@@ -1,0 +1,23 @@
+|Inputs Library|
+
+var inputs: void;
+var inp: char;
+var numinp: byte;
+
+macro inputs.nread {
+ |3Digit Input Yay!|
+ clearByte(numinp[0])
+ read(inp)
+ subByte(inp[0] 48)
+ for(inp[0])
+  addByte(numinp[0] 100)
+ end;
+ read(inp)
+ subByte(inp[0] 48)
+ for(inp[0])
+  addByte(numinp[0] 10)
+ end;
+ read(inp)
+ subByte(inp[0] 48)
+ moveAddByte(inp[0] numinp[0])
+} alias readNum = inputs.nread
